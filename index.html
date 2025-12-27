@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>駐輪場・ロッカーメモ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 16px;
+    background: #f5f5f5;
+  }
+
+  h1 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .card {
+    background: white;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+  }
+
+  video, img {
+    width: 100%;
+    border-radius: 8px;
+  }
+
+  button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    font-size: 18px;
+    border: none;
+    border-radius: 8px;
+    background: #007aff;
+    color: white;
+  }
+
+  textarea {
+    width: 100%;
+    padding: 10px;
+    font-size: 18px;
+    border-radius: 8px;
+  }
+
+  .keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .keypad button {
+    background: #333;
+    color: white;
+    font-size: 22px;
+    padding: 16px;
+  }
+
+  .item {
+    background: white;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  }
+
+  .item img {
+    width: 100%;
+    border-radius: 8px;
+  }
+
+  .small-btn {
+    width: auto;
+    padding: 8px 12px;
+    font-size: 14px;
+    margin-top: 0;
+    margin-left: 6px;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+
+  .row select {
+    flex: 1;
+  }
+
+  .row input[type="number"] {
+    width: 120px;
+  }
+</style>
+</head>
+<body>
+
+<h1>駐輪場・ロッカーメモ</h1>
+
+<div class="card">
+  <video id="camera" autoplay playsinline></video>
+  <button id="shootBtn">撮影</button>
+
+  <canvas id="canvas" style="display:none;"></canvas>
+  <img id="preview" alt="preview">
+
+  <h3>メモ（テンキー入力）</h3>
+  <textarea id="note" rows="2" placeholder="番号などを入力"></textarea>
+
+  <div class="keypad">
+    <button onclick="addKey('1')">1</button>
+    <button onclick="addKey('2')">2</button>
+    <button onclick="addKey('3')">3</button>
+    <button onclick="addKey('4')">4</button>
+    <button onclick="addKey('5')">5</button>
+    <button onclick="addKey('6')">6</button>
+    <button onclick="addKey('7')">7</button>
+    <button onclick="addKey('8')">8</button>
+    <button onclick="addKey('9')">9</button>
+    <button onclick="addKey('0')" style="grid-column: span 3;">0</button>
+  </div>
+
+  <h3>無料時間</h3>
+  <div class="row">
+    <select id="freeTime"></select>
+    <button class="small-btn" id="resetPresetsBtn">初期化</button>
+  </div>
+
+  <div class="row">
+    <input id="customTime" type="number" placeholder="分数を入力">
+    <button class="small-btn" id="addPresetBtn">追加</button>
+  </div>
+
+  <button id="saveBtn">保存</button>
+</div>
+
+<h2>保存済み</h2>
+<div id="list"></div>
+
+<script>
+const KEY = 'parkingLockerMemo';
+const PRESET_KEY = "freeTimePresets";
+
+// デフォルトプリセット
+const DEFAULT_PRESETS = [0, 30, 60, 120, 180, 240, 300];
+
+// ===== カメラ起動（アウトカメラ優先） =====
+function startCamera() {
+  const exact = { video: { facingMode: { exact: "environment" } } };
+  const fallback = { video: { facingMode: "environment" } };
+
+  navigator.mediaDevices.getUserMedia(exact)
+    .then(stream => camera.srcObject = stream)
+    .catch(() => {
+      navigator.mediaDevices.getUserMedia(fallback)
+        .then(stream => camera.srcObject = stream)
+        .catch(err => alert("カメラが使えません: " + err));
+    });
+}
+startCamera();
+
+// ===== テンキー入力 =====
+function addKey(num) {
+  note.value += num;
+}
+
+// ===== プリセット管理 =====
+let presets = [];
+
+function loadPresets() {
+  const saved = JSON.parse(localStorage.getItem(PRESET_KEY) || "[]");
+  presets = saved.length ? [...new Set([...DEFAULT_PRESETS, ...saved])] : [...DEFAULT_PRESETS];
+  presets.sort((a, b) => a - b);
+  renderPresetOptions();
+}
+
+function renderPresetOptions() {
+  freeTime.innerHTML = "";
+  presets.forEach(min => {
+    const op = document.createElement("option");
+    op.value = min;
+    if (min === 0) op.textContent = "0分（無料なし）";
+    else if (min < 60) op.textContent = `${min}分`;
+    else if (min % 60 === 0) op.textContent = `${min/60}時間`;
+    else op.textContent = `${Math.floor(min/60)}時間${min%60}分`;
+    freeTime.appendChild(op);
+  });
+}
+
+function addCustomTime() {
+  const val = parseInt(customTime.value);
+  if (!val || val <= 0) return;
+  const saved = JSON.parse(localStorage.getItem(PRESET_KEY) || "[]");
+  saved.push(val);
+  localStorage.setItem(PRESET_KEY, JSON.stringify(saved));
+  customTime.value = "";
+  loadPresets();
+}
+
+function resetPresets() {
+  localStorage.removeItem(PRESET_KEY);
+  loadPresets();
+}
+
+// ===== 撮影（縦512固定・横比率維持） =====
+shootBtn.onclick = () => {
+  if (!camera.videoWidth) {
+    alert("カメラ準備中です");
+    return;
+  }
+  const ratio = camera.videoWidth / camera.videoHeight;
+  canvas.height = 512;
+  canvas.width = 512 * ratio;
+  canvas.getContext("2d").drawImage(camera, 0, 0, canvas.width, canvas.height);
+  preview.src = canvas.toDataURL("image/png");
+};
+
+// ===== 保存 =====
+saveBtn.onclick = () => {
+  const dataUrl = preview.src || "";
+  const noteText = note.value.trim();
+  const freeMinutes = parseInt(freeTime.value);
+
+  const now = new Date();
+  const timestamp = now.toLocaleString("ja-JP");
+  const paidStart = new Date(now.getTime() + freeMinutes * 60000).toLocaleString("ja-JP");
+
+  const items = JSON.parse(localStorage.getItem(KEY) || "[]");
+  items.push({ dataUrl, note: noteText, timestamp, freeMinutes, paidStart });
+  localStorage.setItem(KEY, JSON.stringify(items));
+
+  note.value = "";
+  loadItems();
+};
+
+// ===== 保存一覧 =====
+function loadItems() {
+  list.innerHTML = "";
+  const items = JSON.parse(localStorage.getItem(KEY) || "[]");
+  items.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+  items.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "item";
+
+    if (item.dataUrl) {
+      const img = document.createElement("img");
+      img.src = item.dataUrl;
+      div.appendChild(img);
+    }
+
+    div.innerHTML += `
+      <p>メモ: ${item.note || "(なし)"}</p>
+      <p>入庫時刻: ${item.timestamp}</p>
+      <p>無料時間: ${item.freeMinutes}分</p>
+      <p>有料開始: ${item.paidStart}</p>
+    `;
+
+    const del = document.createElement("button");
+    del.textContent = "削除";
+    del.onclick = () => {
+      const all = JSON.parse(localStorage.getItem(KEY) || "[]");
+      const idx = all.indexOf(item);
+      if (idx !== -1) {
+        all.splice(idx, 1);
+        localStorage.setItem(KEY, JSON.stringify(all));
+        loadItems();
+      }
+    };
+    div.appendChild(del);
+
+    list.appendChild(div);
+  });
+}
+
+// 初期化
+addPresetBtn.onclick = addCustomTime;
+resetPresetsBtn.onclick = resetPresets;
+
+loadPresets();
+loadItems();
+</script>
+
+</body>
+</html>
