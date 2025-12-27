@@ -105,8 +105,10 @@
 <h1>駐輪場・ロッカーメモ</h1>
 
 <div class="card">
-  <video id="camera" autoplay playsinline></video>
-  <button id="shootBtn">撮影</button>
+
+  <!-- カメラ（初期は停止） -->
+  <video id="camera" autoplay playsinline style="background:#000;"></video>
+  <button id="shootBtn">カメラ起動</button>
 
   <canvas id="canvas" style="display:none;"></canvas>
   <img id="preview" alt="preview">
@@ -147,24 +149,24 @@
 <script>
 const KEY = 'parkingLockerMemo';
 const PRESET_KEY = "freeTimePresets";
-
-// デフォルトプリセット
 const DEFAULT_PRESETS = [0, 30, 60, 120, 180, 240, 300];
 
-// ===== カメラ起動（アウトカメラ優先） =====
-function startCamera() {
-  const exact = { video: { facingMode: { exact: "environment" } } };
-  const fallback = { video: { facingMode: "environment" } };
+let cameraStream = null;
+let cameraActive = false;
 
-  navigator.mediaDevices.getUserMedia(exact)
-    .then(stream => camera.srcObject = stream)
-    .catch(() => {
-      navigator.mediaDevices.getUserMedia(fallback)
-        .then(stream => camera.srcObject = stream)
-        .catch(err => alert("カメラが使えません: " + err));
+// ===== カメラ起動（ボタン押すまで起動しない） =====
+async function startCamera() {
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" }
     });
+    camera.srcObject = cameraStream;
+    cameraActive = true;
+    shootBtn.textContent = "撮影する";
+  } catch (err) {
+    alert("カメラが使えません: " + err);
+  }
 }
-startCamera();
 
 // ===== テンキー入力 =====
 function addKey(num) {
@@ -209,17 +211,31 @@ function resetPresets() {
   loadPresets();
 }
 
-// ===== 撮影（縦512固定・横比率維持） =====
-shootBtn.onclick = () => {
-  if (!camera.videoWidth) {
-    alert("カメラ準備中です");
+// ===== 撮影ボタン（起動 → 撮影 → 停止） =====
+shootBtn.onclick = async () => {
+
+  // 1回目：カメラ起動
+  if (!cameraActive) {
+    await startCamera();
     return;
   }
-  const ratio = camera.videoWidth / camera.videoHeight;
-  canvas.height = 512;
-  canvas.width = 512 * ratio;
-  canvas.getContext("2d").drawImage(camera, 0, 0, canvas.width, canvas.height);
-  preview.src = canvas.toDataURL("image/png");
+
+  // 2回目：撮影
+  if (camera.videoWidth) {
+    const ratio = camera.videoWidth / camera.videoHeight;
+    canvas.height = 512;
+    canvas.width = 512 * ratio;
+    canvas.getContext("2d").drawImage(camera, 0, 0, canvas.width, canvas.height);
+    preview.src = canvas.toDataURL("image/png");
+  }
+
+  // カメラ停止
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+  }
+  camera.srcObject = null;
+  cameraActive = false;
+  shootBtn.textContent = "再撮影";
 };
 
 // ===== 保存 =====
@@ -240,13 +256,13 @@ saveBtn.onclick = () => {
   loadItems();
 };
 
-// ===== 保存一覧 =====
+// ===== 保存一覧（削除バグ修正版） =====
 function loadItems() {
   list.innerHTML = "";
   const items = JSON.parse(localStorage.getItem(KEY) || "[]");
   items.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-  items.forEach(item => {
+  items.forEach((item, index) => {
     const div = document.createElement("div");
     div.className = "item";
 
@@ -266,13 +282,9 @@ function loadItems() {
     const del = document.createElement("button");
     del.textContent = "削除";
     del.onclick = () => {
-      const all = JSON.parse(localStorage.getItem(KEY) || "[]");
-      const idx = all.indexOf(item);
-      if (idx !== -1) {
-        all.splice(idx, 1);
-        localStorage.setItem(KEY, JSON.stringify(all));
-        loadItems();
-      }
+      items.splice(index, 1);
+      localStorage.setItem(KEY, JSON.stringify(items));
+      loadItems();
     };
     div.appendChild(del);
 
