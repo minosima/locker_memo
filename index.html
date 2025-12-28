@@ -162,7 +162,7 @@
     <div></div> <!-- 空欄 -->
   </div>
 
-  <h3 style="margin-top:20px;">無料時間</h3>
+  <h3 style="margin-top:20px;">無料・基本料金時間</h3>
 
   <!-- 合計時間を上に配置 -->
   <p style="font-size:22px; font-weight:600; margin:10px 0;">
@@ -316,8 +316,8 @@ function loadItems() {
     div.innerHTML += `
       <p>メモ: ${item.note || "(なし)"}</p>
       <p>入庫時刻: ${item.timestamp}</p>
-      <p>無料時間: ${item.freeMinutes}分</p>
-      <p>有料開始: ${item.paidStart}</p>
+      <p>無料・基本料金時間: ${item.freeMinutes}分</p>
+      <p>有料・課金開始時間: ${item.paidStart}</p>
     `;
 
     const del = document.createElement("button");
