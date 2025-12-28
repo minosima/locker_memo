@@ -28,6 +28,7 @@
   video, img {
     width: 100%;
     border-radius: 8px;
+    background: #000;
   }
 
   button {
@@ -80,7 +81,7 @@
     padding: 8px 12px;
     font-size: 14px;
     margin-top: 0;
-    margin-left: 6px;
+    margin-right: 6px;
   }
 
   .row {
@@ -89,14 +90,6 @@
     gap: 6px;
     margin-top: 4px;
     flex-wrap: wrap;
-  }
-
-  .row select {
-    flex: 1;
-  }
-
-  .row input[type="number"] {
-    width: 120px;
   }
 </style>
 </head>
@@ -107,7 +100,7 @@
 <div class="card">
 
   <!-- カメラ（初期は停止） -->
-  <video id="camera" autoplay playsinline style="background:#000;"></video>
+  <video id="camera" autoplay playsinline></video>
   <button id="shootBtn">カメラ起動</button>
 
   <canvas id="canvas" style="display:none;"></canvas>
@@ -130,15 +123,19 @@
   </div>
 
   <h3>無料時間</h3>
-  <div class="row">
-    <select id="freeTime"></select>
-    <button class="small-btn" id="resetPresetsBtn">初期化</button>
-  </div>
 
   <div class="row">
-    <input id="customTime" type="number" placeholder="分数を入力">
-    <button class="small-btn" id="addPresetBtn">追加</button>
+    <button class="small-btn" onclick="addTime(60)">+1時間</button>
+    <button class="small-btn" onclick="addTime(30)">+30分</button>
+    <button class="small-btn" onclick="addTime(10)">+10分</button>
+    <button class="small-btn" onclick="addTime(5)">+5分</button>
+    <button class="small-btn" onclick="addTime(1)">+1分</button>
+    <button class="small-btn" onclick="resetTime()">クリア</button>
   </div>
+
+  <p style="font-size:20px; margin-top:10px;">
+    合計時間：<span id="totalTime">0分</span>
+  </p>
 
   <button id="saveBtn">保存</button>
 </div>
@@ -148,11 +145,10 @@
 
 <script>
 const KEY = 'parkingLockerMemo';
-const PRESET_KEY = "freeTimePresets";
-const DEFAULT_PRESETS = [0, 30, 60, 120, 180, 240, 300];
 
 let cameraStream = null;
 let cameraActive = false;
+let freeMinutes = 0;
 
 // ===== カメラ起動（ボタン押すまで起動しない） =====
 async function startCamera() {
@@ -173,42 +169,26 @@ function addKey(num) {
   note.value += num;
 }
 
-// ===== プリセット管理 =====
-let presets = [];
-
-function loadPresets() {
-  const saved = JSON.parse(localStorage.getItem(PRESET_KEY) || "[]");
-  presets = saved.length ? [...new Set([...DEFAULT_PRESETS, ...saved])] : [...DEFAULT_PRESETS];
-  presets.sort((a, b) => a - b);
-  renderPresetOptions();
+// ===== 時間加算 =====
+function addTime(min) {
+  freeMinutes += min;
+  updateTimeDisplay();
 }
 
-function renderPresetOptions() {
-  freeTime.innerHTML = "";
-  presets.forEach(min => {
-    const op = document.createElement("option");
-    op.value = min;
-    if (min === 0) op.textContent = "0分（無料なし）";
-    else if (min < 60) op.textContent = `${min}分`;
-    else if (min % 60 === 0) op.textContent = `${min/60}時間`;
-    else op.textContent = `${Math.floor(min/60)}時間${min%60}分`;
-    freeTime.appendChild(op);
-  });
+function resetTime() {
+  freeMinutes = 0;
+  updateTimeDisplay();
 }
 
-function addCustomTime() {
-  const val = parseInt(customTime.value);
-  if (!val || val <= 0) return;
-  const saved = JSON.parse(localStorage.getItem(PRESET_KEY) || "[]");
-  saved.push(val);
-  localStorage.setItem(PRESET_KEY, JSON.stringify(saved));
-  customTime.value = "";
-  loadPresets();
-}
+function updateTimeDisplay() {
+  const h = Math.floor(freeMinutes / 60);
+  const m = freeMinutes % 60;
 
-function resetPresets() {
-  localStorage.removeItem(PRESET_KEY);
-  loadPresets();
+  if (h > 0) {
+    totalTime.textContent = `${h}時間${m}分`;
+  } else {
+    totalTime.textContent = `${m}分`;
+  }
 }
 
 // ===== 撮影ボタン（起動 → 撮影 → 停止） =====
@@ -242,7 +222,6 @@ shootBtn.onclick = async () => {
 saveBtn.onclick = () => {
   const dataUrl = preview.src || "";
   const noteText = note.value.trim();
-  const freeMinutes = parseInt(freeTime.value);
 
   const now = new Date();
   const timestamp = now.toLocaleString("ja-JP");
@@ -253,6 +232,7 @@ saveBtn.onclick = () => {
   localStorage.setItem(KEY, JSON.stringify(items));
 
   note.value = "";
+  resetTime();
   loadItems();
 };
 
@@ -292,12 +272,8 @@ function loadItems() {
   });
 }
 
-// 初期化
-addPresetBtn.onclick = addCustomTime;
-resetPresetsBtn.onclick = resetPresets;
-
-loadPresets();
 loadItems();
+updateTimeDisplay();
 </script>
 
 </body>
