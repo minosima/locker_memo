@@ -78,7 +78,14 @@
     font-size: 22px;
     padding: 16px;
     border-radius: 12px;
-    border: 1px solid #b7e6b0;  /* 薄いグリーン枠線 */
+    border: 1px solid #b7e6b0;
+  }
+
+  .clear-key {
+    background: #ff9500 !important; /* iOSオレンジ */
+    color: white !important;
+    border: none !important;
+    font-weight: 600;
   }
 
   /* ===== 保存済みカード ===== */
@@ -106,15 +113,15 @@
     flex: 1;
     min-width: 80px;
     padding: 10px 0;
-    background: #d9fdd3;        /* 薄いグリーン */
-    color: #0a7d32;             /* 濃いグリーン文字 */
+    background: #d9fdd3;
+    color: #0a7d32;
     border-radius: 10px;
-    border: 1px solid #b7e6b0;  /* 薄いグリーン枠線 */
+    border: 1px solid #b7e6b0;
     font-weight: 600;
   }
 
   #clearTime {
-    background: #ff9500; /* iOSオレンジ */
+    background: #ff9500;
     color: white;
     border: none;
   }
@@ -122,7 +129,7 @@
 </head>
 <body>
 
-<h1>駐輪場・ロッカーメモ</h1>
+<h1>貸しスペース番号メモ</h1>
 
 <div class="card">
 
@@ -136,17 +143,23 @@
   <h3 style="margin-top:20px;">メモ（テンキー入力）</h3>
   <textarea id="note" rows="2" placeholder="番号などを入力"></textarea>
 
+  <!-- ★ テンキー（0は1マス、右端は空欄、クリア追加） -->
   <div class="keypad">
     <button class="key">1</button>
     <button class="key">2</button>
     <button class="key">3</button>
+
     <button class="key">4</button>
     <button class="key">5</button>
     <button class="key">6</button>
+
     <button class="key">7</button>
     <button class="key">8</button>
     <button class="key">9</button>
-    <button class="key" style="grid-column: span 3;">0</button>
+
+    <button class="key">0</button>
+    <button id="keyClear" class="key clear-key">クリア</button>
+    <div></div> <!-- 空欄 -->
   </div>
 
   <h3 style="margin-top:20px;">無料時間</h3>
@@ -207,6 +220,11 @@ document.querySelectorAll(".key").forEach(btn => {
   btn.addEventListener("click", () => {
     note.value += btn.textContent;
   });
+});
+
+/* ===== テンキーのクリア ===== */
+document.getElementById("keyClear").addEventListener("click", () => {
+  note.value = "";
 });
 
 /* ===== 時間加算 ===== */
