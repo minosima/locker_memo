@@ -81,20 +81,22 @@
     border-radius: 8px;
   }
 
-  .small-btn {
-    width: auto;
-    padding: 8px 12px;
-    font-size: 14px;
-    margin-top: 0;
-    margin-right: 6px;
+  /* 時間ボタンの統一デザイン */
+  .time-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
-  .row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 4px;
-    flex-wrap: wrap;
+  .time-buttons button {
+    flex: 1;
+    min-width: 80px;
+    text-align: center;
+  }
+
+  #clearTime {
+    background: #ff9500; /* オレンジ色 */
+    color: white;
   }
 </style>
 </head>
@@ -129,18 +131,19 @@
 
   <h3>無料時間</h3>
 
-  <div class="row">
-    <button class="small-btn tbtn" data-min="60">+1時間</button>
-    <button class="small-btn tbtn" data-min="30">+30分</button>
-    <button class="small-btn tbtn" data-min="10">+10分</button>
-    <button class="small-btn tbtn" data-min="5">+5分</button>
-    <button class="small-btn tbtn" data-min="1">+1分</button>
-    <button class="small-btn" id="clearTime">クリア</button>
-  </div>
-
-  <p style="font-size:20px; margin-top:10px;">
+  <!-- ★ 合計時間を上に移動 ★ -->
+  <p style="font-size:20px; margin-top:10px; margin-bottom:10px;">
     合計時間：<span id="totalTime">0分</span>
   </p>
+
+  <div class="time-buttons">
+    <button class="tbtn" data-min="60">+1時間</button>
+    <button class="tbtn" data-min="30">+30分</button>
+    <button class="tbtn" data-min="10">+10分</button>
+    <button class="tbtn" data-min="5">+5分</button>
+    <button class="tbtn" data-min="1">+1分</button>
+    <button id="clearTime">クリア</button>
+  </div>
 
   <button id="saveBtn">保存</button>
 </div>
