@@ -6,125 +6,62 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-  /* ===== iOS風の基本設定 ===== */
-  html, body {
-    touch-action: manipulation; /* ダブルタップ拡大禁止＋高速化 */
-  }
-
+  html, body { touch-action: manipulation; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", sans-serif;
-    margin: 0;
-    padding: 16px;
-    background: #f2f2f7; /* iOSの薄いグレー背景 */
+    margin: 0; padding: 16px; background: #f2f2f7;
   }
+  h1 { text-align:center; margin-bottom:20px; font-weight:700; color:#111; }
 
-  h1 {
-    text-align: center;
-    margin-bottom: 20px;
-    font-weight: 700;
-    color: #111;
-  }
-
-  /* ===== iOS風カード ===== */
   .card {
-    background: #ffffff;
-    padding: 20px;
-    border-radius: 18px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    margin-bottom: 24px;
+    background:#fff; padding:20px; border-radius:18px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.08); margin-bottom:24px;
   }
 
-  video, img {
-    width: 100%;
-    border-radius: 12px;
-    background: #000;
-  }
+  video, img { width:100%; border-radius:12px; background:#000; }
 
-  /* ===== iOS風ボタン ===== */
   button {
-    width: 100%;
-    padding: 14px;
-    margin-top: 12px;
-    font-size: 17px;
-    font-weight: 600;
-    border: none;
-    border-radius: 12px;
-    background: #007aff;
-    color: white;
-    box-shadow: none;
+    width:100%; padding:14px; margin-top:12px; font-size:17px;
+    font-weight:600; border:none; border-radius:12px;
+    background:#007aff; color:white;
   }
 
-  /* ===== iOS風テキストエリア ===== */
   textarea {
-    width: 100%;
-    padding: 12px;
-    font-size: 17px;
-    border-radius: 12px;
-    border: 1px solid #e5e5ea;
-    background: #ffffff;
+    width:100%; padding:12px; font-size:17px;
+    border-radius:12px; border:1px solid #e5e5ea; background:#fff;
   }
 
-  /* ===== テンキー（薄いグリーン） ===== */
   .keypad {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-top: 12px;
+    display:grid; grid-template-columns:repeat(3,1fr);
+    gap:12px; margin-top:12px;
   }
 
   .keypad button {
-    background: #d9fdd3;        /* 薄いグリーン */
-    color: #0a7d32;             /* 濃いグリーン文字 */
-    font-size: 22px;
-    padding: 16px;
-    border-radius: 12px;
-    border: 1px solid #b7e6b0;
+    background:#d9fdd3; color:#0a7d32; font-size:22px;
+    padding:16px; border-radius:12px; border:1px solid #b7e6b0;
   }
 
-  .clear-key {
-    background: #ff9500 !important; /* iOSオレンジ */
-    color: white !important;
-    border: none !important;
-    font-weight: 600;
-  }
+  .clear-key { background:#ff9500 !important; color:white !important; border:none !important; }
 
-  /* ===== 保存済みカード ===== */
   .item {
-    background: #ffffff;
-    padding: 16px;
-    border-radius: 16px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    margin-bottom: 16px;
+    background:#fff; padding:16px; border-radius:16px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.06); margin-bottom:16px;
+    transition:opacity 0.3s;
   }
 
-  .item img {
-    width: 100%;
-    border-radius: 12px;
-  }
+  .item.grayed { opacity:0.4; }
 
-  /* ===== 時間ボタン（薄いグリーン） ===== */
   .time-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    display:flex; flex-wrap:wrap; gap:8px;
   }
 
   .time-buttons button {
-    flex: 1;
-    min-width: 80px;
-    padding: 10px 0;
-    background: #d9fdd3;
-    color: #0a7d32;
-    border-radius: 10px;
-    border: 1px solid #b7e6b0;
-    font-weight: 600;
+    flex:1; min-width:80px; padding:10px 0;
+    background:#d9fdd3; color:#0a7d32;
+    border-radius:10px; border:1px solid #b7e6b0; font-weight:600;
   }
 
-  #clearTime {
-    background: #ff9500;
-    color: white;
-    border: none;
-  }
+  #clearTime { background:#ff9500; color:white; border:none; }
 </style>
 </head>
 <body>
@@ -133,7 +70,6 @@
 
 <div class="card">
 
-  <!-- カメラ（初期は停止） -->
   <video id="camera" autoplay playsinline></video>
   <button id="shootBtn">カメラ起動</button>
 
@@ -143,38 +79,32 @@
   <h3 style="margin-top:20px;">メモ（テンキー入力）</h3>
   <textarea id="note" rows="2" placeholder="番号などを入力"></textarea>
 
-  <!-- ★ テンキー（0は1マス、右端は空欄、クリア追加） -->
   <div class="keypad">
-    <button class="key">1</button>
-    <button class="key">2</button>
-    <button class="key">3</button>
-
-    <button class="key">4</button>
-    <button class="key">5</button>
-    <button class="key">6</button>
-
-    <button class="key">7</button>
-    <button class="key">8</button>
-    <button class="key">9</button>
-
+    <button class="key">1</button><button class="key">2</button><button class="key">3</button>
+    <button class="key">4</button><button class="key">5</button><button class="key">6</button>
+    <button class="key">7</button><button class="key">8</button><button class="key">9</button>
     <button class="key">0</button>
     <button id="keyClear" class="key clear-key">クリア</button>
-    <div></div> <!-- 空欄 -->
+    <div></div>
   </div>
 
   <h3 style="margin-top:20px;">無料・基本料金時間</h3>
 
-  <!-- 合計時間を上に配置 -->
   <p style="font-size:22px; font-weight:600; margin:10px 0;">
-    合計時間：<span id="totalTime">0分</span>
+    合計時間（1ヶ月は30日計算）：<span id="totalTime">0分</span>
   </p>
 
   <div class="time-buttons">
+    <button class="tbtn" data-type="month">+1ヶ月</button>
+    <button class="tbtn" data-type="week">+1週間</button>
+    <button class="tbtn" data-type="day">+1日</button>
+
     <button class="tbtn" data-min="60">+1時間</button>
     <button class="tbtn" data-min="30">+30分</button>
     <button class="tbtn" data-min="10">+10分</button>
     <button class="tbtn" data-min="5">+5分</button>
     <button class="tbtn" data-min="1">+1分</button>
+
     <button id="clearTime">クリア</button>
   </div>
 
@@ -191,41 +121,69 @@ let cameraStream = null;
 let cameraActive = false;
 let freeMinutes = 0;
 
-/* ===== 高速化：touchstart → click ===== */
+/* ===== 月の日数を取得 ===== */
+function getDaysInCurrentMonth() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+}
+
+/* ===== 分 → ◯ヶ月◯週◯日◯時間◯分 に変換 ===== */
+function formatDuration(minutes) {
+  const daysInMonth = getDaysInCurrentMonth();
+  const MONTH = daysInMonth * 1440;
+  const WEEK  = 7 * 1440;
+  const DAY   = 1440;
+  const HOUR  = 60;
+
+  const months = Math.floor(minutes / MONTH);
+  minutes %= MONTH;
+
+  const weeks = Math.floor(minutes / WEEK);
+  minutes %= WEEK;
+
+  const days = Math.floor(minutes / DAY);
+  minutes %= DAY;
+
+  const hours = Math.floor(minutes / HOUR);
+  minutes %= HOUR;
+
+  let text = "";
+  if (months > 0) text += `${months}ヶ月`;
+  if (weeks > 0)  text += `${weeks}週`;
+  if (days > 0)   text += `${days}日`;
+  if (hours > 0)  text += `${hours}時間`;
+  text += `${minutes}分`;
+
+  return text;
+}
+
+/* ===== 合計時間表示 ===== */
+function updateTimeDisplay() {
+  totalTime.textContent = formatDuration(freeMinutes);
+}
+
+/* ===== 高速タップ ===== */
 function fastClick(selector) {
   document.querySelectorAll(selector).forEach(el => {
-    el.addEventListener("touchstart", e => {
-      e.preventDefault();
-      el.click();
-    });
+    el.addEventListener("touchstart", e => { e.preventDefault(); el.click(); });
   });
 }
 
 /* ===== カメラ起動 ===== */
 async function startCamera() {
   try {
-    cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" }
-    });
+    cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
     camera.srcObject = cameraStream;
     cameraActive = true;
     shootBtn.textContent = "撮影する";
-  } catch (err) {
-    alert("カメラが使えません: " + err);
-  }
+  } catch (err) { alert("カメラが使えません: " + err); }
 }
 
-/* ===== テンキー入力 ===== */
+/* ===== テンキー ===== */
 document.querySelectorAll(".key").forEach(btn => {
-  btn.addEventListener("click", () => {
-    note.value += btn.textContent;
-  });
+  btn.addEventListener("click", () => { note.value += btn.textContent; });
 });
-
-/* ===== テンキーのクリア ===== */
-document.getElementById("keyClear").addEventListener("click", () => {
-  note.value = "";
-});
+keyClear.addEventListener("click", () => { note.value = ""; });
 
 /* ===== 時間加算 ===== */
 function addTime(min) {
@@ -233,35 +191,33 @@ function addTime(min) {
   updateTimeDisplay();
 }
 
-function resetTime() {
-  freeMinutes = 0;
-  updateTimeDisplay();
-}
-
-function updateTimeDisplay() {
-  const h = Math.floor(freeMinutes / 60);
-  const m = freeMinutes % 60;
-
-  if (h > 0) totalTime.textContent = `${h}時間${m}分`;
-  else totalTime.textContent = `${m}分`;
-}
-
-/* ===== 時間ボタン ===== */
+/* ===== 月・週・日ボタン ===== */
 document.querySelectorAll(".tbtn").forEach(btn => {
   btn.addEventListener("click", () => {
+    const type = btn.dataset.type;
+
+    if (type === "month") {
+      addTime(getDaysInCurrentMonth() * 1440);
+      return;
+    }
+    if (type === "week") {
+      addTime(7 * 1440);
+      return;
+    }
+    if (type === "day") {
+      addTime(1440);
+      return;
+    }
+
     addTime(parseInt(btn.dataset.min));
   });
 });
 
-clearTime.addEventListener("click", resetTime);
+clearTime.addEventListener("click", () => { freeMinutes = 0; updateTimeDisplay(); });
 
-/* ===== 撮影ボタン ===== */
+/* ===== 撮影 ===== */
 shootBtn.addEventListener("click", async () => {
-
-  if (!cameraActive) {
-    await startCamera();
-    return;
-  }
+  if (!cameraActive) { await startCamera(); return; }
 
   if (camera.videoWidth) {
     const ratio = camera.videoWidth / camera.videoHeight;
@@ -271,9 +227,7 @@ shootBtn.addEventListener("click", async () => {
     preview.src = canvas.toDataURL("image/png");
   }
 
-  if (cameraStream) {
-    cameraStream.getTracks().forEach(t => t.stop());
-  }
+  if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
   camera.srcObject = null;
   cameraActive = false;
   shootBtn.textContent = "再撮影";
@@ -286,14 +240,27 @@ saveBtn.addEventListener("click", () => {
 
   const now = new Date();
   const timestamp = now.toLocaleString("ja-JP");
-  const paidStart = new Date(now.getTime() + freeMinutes * 60000).toLocaleString("ja-JP");
+
+  const paidStartDate = new Date(now.getTime() + freeMinutes * 60000);
+  const paidStartText = paidStartDate.toLocaleString("ja-JP");
+
+  const durationText = formatDuration(freeMinutes);
 
   const items = JSON.parse(localStorage.getItem(KEY) || "[]");
-  items.push({ dataUrl, note: noteText, timestamp, freeMinutes, paidStart });
+  items.push({
+    dataUrl,
+    note: noteText,
+    timestamp,
+    freeMinutes,
+    paidStart: paidStartText,
+    durationText,
+    deleted: false
+  });
   localStorage.setItem(KEY, JSON.stringify(items));
 
   note.value = "";
-  resetTime();
+  freeMinutes = 0;
+  updateTimeDisplay();
   loadItems();
 });
 
@@ -301,11 +268,11 @@ saveBtn.addEventListener("click", () => {
 function loadItems() {
   list.innerHTML = "";
   const items = JSON.parse(localStorage.getItem(KEY) || "[]");
-  items.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
   items.forEach((item, index) => {
     const div = document.createElement("div");
     div.className = "item";
+    if (item.deleted) div.classList.add("grayed");
 
     if (item.dataUrl) {
       const img = document.createElement("img");
@@ -316,18 +283,33 @@ function loadItems() {
     div.innerHTML += `
       <p>メモ: ${item.note || "(なし)"}</p>
       <p>入庫時刻: ${item.timestamp}</p>
-      <p>無料・基本料金時間: ${item.freeMinutes}分</p>
+      <p>無料・基本料金時間: ${item.durationText}</p>
       <p>有料・課金開始時間: ${item.paidStart}</p>
     `;
 
-    const del = document.createElement("button");
-    del.textContent = "削除";
-    del.addEventListener("click", () => {
-      items.splice(index, 1);
-      localStorage.setItem(KEY, JSON.stringify(items));
-      loadItems();
-    });
-    div.appendChild(del);
+    if (!item.deleted) {
+      const del = document.createElement("button");
+      del.textContent = "削除（グレーアウト）";
+      del.addEventListener("click", () => {
+        item.deleted = true;
+        localStorage.setItem(KEY, JSON.stringify(items));
+        loadItems();
+      });
+      div.appendChild(del);
+    } else {
+      const del2 = document.createElement("button");
+      del2.textContent = "完全削除";
+      del2.addEventListener("click", () => {
+        if (confirm("本当に削除しますか？")) {
+          items.splice(index, 1);
+        } else {
+          item.deleted = false;
+        }
+        localStorage.setItem(KEY, JSON.stringify(items));
+        loadItems();
+      });
+      div.appendChild(del2);
+    }
 
     list.appendChild(div);
   });
@@ -335,8 +317,6 @@ function loadItems() {
 
 loadItems();
 updateTimeDisplay();
-
-/* ===== 全ボタン高速化 ===== */
 fastClick("button, .key");
 </script>
 
