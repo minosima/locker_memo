@@ -4,7 +4,12 @@
 <meta charset="UTF-8">
 <title>駐輪場・ロッカーメモ</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
+  html, body {
+    touch-action: manipulation; /* ダブルタップ拡大禁止＋高速化 */
+  }
+
   body {
     font-family: sans-serif;
     margin: 0;
@@ -110,27 +115,27 @@
   <textarea id="note" rows="2" placeholder="番号などを入力"></textarea>
 
   <div class="keypad">
-    <button onclick="addKey('1')">1</button>
-    <button onclick="addKey('2')">2</button>
-    <button onclick="addKey('3')">3</button>
-    <button onclick="addKey('4')">4</button>
-    <button onclick="addKey('5')">5</button>
-    <button onclick="addKey('6')">6</button>
-    <button onclick="addKey('7')">7</button>
-    <button onclick="addKey('8')">8</button>
-    <button onclick="addKey('9')">9</button>
-    <button onclick="addKey('0')" style="grid-column: span 3;">0</button>
+    <button class="key">1</button>
+    <button class="key">2</button>
+    <button class="key">3</button>
+    <button class="key">4</button>
+    <button class="key">5</button>
+    <button class="key">6</button>
+    <button class="key">7</button>
+    <button class="key">8</button>
+    <button class="key">9</button>
+    <button class="key" style="grid-column: span 3;">0</button>
   </div>
 
   <h3>無料時間</h3>
 
   <div class="row">
-    <button class="small-btn" onclick="addTime(60)">+1時間</button>
-    <button class="small-btn" onclick="addTime(30)">+30分</button>
-    <button class="small-btn" onclick="addTime(10)">+10分</button>
-    <button class="small-btn" onclick="addTime(5)">+5分</button>
-    <button class="small-btn" onclick="addTime(1)">+1分</button>
-    <button class="small-btn" onclick="resetTime()">クリア</button>
+    <button class="small-btn tbtn" data-min="60">+1時間</button>
+    <button class="small-btn tbtn" data-min="30">+30分</button>
+    <button class="small-btn tbtn" data-min="10">+10分</button>
+    <button class="small-btn tbtn" data-min="5">+5分</button>
+    <button class="small-btn tbtn" data-min="1">+1分</button>
+    <button class="small-btn" id="clearTime">クリア</button>
   </div>
 
   <p style="font-size:20px; margin-top:10px;">
@@ -150,6 +155,16 @@ let cameraStream = null;
 let cameraActive = false;
 let freeMinutes = 0;
 
+// ===== 高速化：touchstart → click =====
+function fastClick(selector) {
+  document.querySelectorAll(selector).forEach(el => {
+    el.addEventListener("touchstart", e => {
+      e.preventDefault();
+      el.click();
+    });
+  });
+}
+
 // ===== カメラ起動（ボタン押すまで起動しない） =====
 async function startCamera() {
   try {
@@ -165,9 +180,11 @@ async function startCamera() {
 }
 
 // ===== テンキー入力 =====
-function addKey(num) {
-  note.value += num;
-}
+document.querySelectorAll(".key").forEach(btn => {
+  btn.addEventListener("click", () => {
+    note.value += btn.textContent;
+  });
+});
 
 // ===== 時間加算 =====
 function addTime(min) {
@@ -184,15 +201,21 @@ function updateTimeDisplay() {
   const h = Math.floor(freeMinutes / 60);
   const m = freeMinutes % 60;
 
-  if (h > 0) {
-    totalTime.textContent = `${h}時間${m}分`;
-  } else {
-    totalTime.textContent = `${m}分`;
-  }
+  if (h > 0) totalTime.textContent = `${h}時間${m}分`;
+  else totalTime.textContent = `${m}分`;
 }
 
+// ===== 時間ボタン =====
+document.querySelectorAll(".tbtn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    addTime(parseInt(btn.dataset.min));
+  });
+});
+
+clearTime.addEventListener("click", resetTime);
+
 // ===== 撮影ボタン（起動 → 撮影 → 停止） =====
-shootBtn.onclick = async () => {
+shootBtn.addEventListener("click", async () => {
 
   // 1回目：カメラ起動
   if (!cameraActive) {
@@ -216,10 +239,10 @@ shootBtn.onclick = async () => {
   camera.srcObject = null;
   cameraActive = false;
   shootBtn.textContent = "再撮影";
-};
+});
 
 // ===== 保存 =====
-saveBtn.onclick = () => {
+saveBtn.addEventListener("click", () => {
   const dataUrl = preview.src || "";
   const noteText = note.value.trim();
 
@@ -234,7 +257,7 @@ saveBtn.onclick = () => {
   note.value = "";
   resetTime();
   loadItems();
-};
+});
 
 // ===== 保存一覧（削除バグ修正版） =====
 function loadItems() {
@@ -261,11 +284,11 @@ function loadItems() {
 
     const del = document.createElement("button");
     del.textContent = "削除";
-    del.onclick = () => {
+    del.addEventListener("click", () => {
       items.splice(index, 1);
       localStorage.setItem(KEY, JSON.stringify(items));
       loadItems();
-    };
+    });
     div.appendChild(del);
 
     list.appendChild(div);
@@ -274,6 +297,9 @@ function loadItems() {
 
 loadItems();
 updateTimeDisplay();
+
+// ===== 全ボタン高速化 =====
+fastClick("button, .key");
 </script>
 
 </body>
