@@ -227,13 +227,20 @@ shootBtn.addEventListener("click", async () => {
 
 /* ===== 保存 ===== */
 saveBtn.addEventListener("click", () => {
-  const dataUrl = preview.src || "";
-  if (!dataUrl) { alert("写真を撮影してください"); return; }
+  // src属性がセットされていない、または初期状態のときは空文字にする
+  const dataUrl = (preview.style.display === "block") ? preview.src : "";
+  const noteText = note.value.trim();
+
+  // 写真もメモも両方ない場合は保存させない
+  if (!dataUrl && !noteText) {
+    alert("写真またはメモを入力してください");
+    return;
+  }
   
   const items = JSON.parse(localStorage.getItem(KEY) || "[]");
   items.push({
     dataUrl,
-    note: note.value.trim(),
+    note: noteText,
     timestamp: new Date().toLocaleString("ja-JP"),
     paidStart: new Date(Date.now() + freeMinutes * 60000).toLocaleString("ja-JP"),
     durationText: formatDuration(freeMinutes),
@@ -241,8 +248,11 @@ saveBtn.addEventListener("click", () => {
   });
   localStorage.setItem(KEY, JSON.stringify(items));
 
+  // 入力リセット
   note.value = "";
   freeMinutes = 0;
+  preview.src = "";           // 画像をクリア
+  preview.style.display = "none"; // 画像を非表示
   updateTimeDisplay();
   loadItems();
 });
