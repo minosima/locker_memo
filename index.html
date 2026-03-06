@@ -18,7 +18,15 @@
     box-shadow:0 4px 12px rgba(0,0,0,0.08); margin-bottom:24px;
   }
 
-  video, img { width:100%; border-radius:12px; background:#000; }
+  /* プレビューとビデオを正方形(1:1)に固定 */
+  video, img { 
+    width:100%; 
+    aspect-ratio: 1 / 1; 
+    object-fit: cover; 
+    border-radius: 12px; 
+    display: none; 
+    background: #000;
+  }
 
   button {
     width:100%; padding:14px; margin-top:12px; font-size:17px;
@@ -37,8 +45,8 @@
   }
 
   .keypad button {
-    background:#d9fdd3; color:#0a7d32; font-size:22px;
-    padding:16px; border-radius:12px; border:1px solid #b7e6b0;
+    background:#d9fdd3; color:#0a7d32; font-size:20px;
+    padding:10px; border-radius:10px; border:1px solid #b7e6b0;
   }
 
   .clear-key { background:#ff9500 !important; color:white !important; border:none !important; }
@@ -46,7 +54,6 @@
   .item {
     background:#fff; padding:16px; border-radius:16px;
     box-shadow:0 2px 8px rgba(0,0,0,0.06); margin-bottom:16px;
-    transition:opacity 0.3s;
   }
 
   .item.grayed { opacity:0.4; }
@@ -57,7 +64,7 @@
 
   .time-buttons button {
     flex:1; min-width:80px; padding:10px 0;
-    background:#d9fdd3; color:#0a7d32;
+    background:#fff2cc; color:#0a7d32;
     border-radius:10px; border:1px solid #b7e6b0; font-weight:600;
   }
 
@@ -69,9 +76,10 @@
 <h1>貸しスペース番号メモ</h1>
 
 <div class="card">
-
-  <video id="camera" autoplay playsinline></video>
-  <button id="shootBtn">カメラ起動</button>
+  <div id="camera-container">
+    <video id="camera" autoplay playsinline></video>
+    <button id="shootBtn">カメラ起動</button>
+  </div>
 
   <canvas id="canvas" style="display:none;"></canvas>
   <img id="preview" alt="preview">
@@ -89,22 +97,19 @@
   </div>
 
   <h3 style="margin-top:20px;">無料・基本料金時間</h3>
-
   <p style="font-size:22px; font-weight:600; margin:10px 0;">
-    合計時間（1ヶ月は30日計算）：<span id="totalTime">0分</span>
+    合計時間：<span id="totalTime">0分</span>
   </p>
 
   <div class="time-buttons">
     <button class="tbtn" data-type="month">+1ヶ月</button>
     <button class="tbtn" data-type="week">+1週間</button>
     <button class="tbtn" data-type="day">+1日</button>
-
     <button class="tbtn" data-min="60">+1時間</button>
     <button class="tbtn" data-min="30">+30分</button>
     <button class="tbtn" data-min="10">+10分</button>
     <button class="tbtn" data-min="5">+5分</button>
     <button class="tbtn" data-min="1">+1分</button>
-
     <button id="clearTime">クリア</button>
   </div>
 
@@ -116,53 +121,38 @@
 
 <script>
 const KEY = 'parkingLockerMemo';
-
 let cameraStream = null;
 let cameraActive = false;
 let freeMinutes = 0;
 
-/* ===== 月の日数を取得 ===== */
 function getDaysInCurrentMonth() {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
 }
 
-/* ===== 分 → ◯ヶ月◯週◯日◯時間◯分 に変換 ===== */
 function formatDuration(minutes) {
   const daysInMonth = getDaysInCurrentMonth();
   const MONTH = daysInMonth * 1440;
   const WEEK  = 7 * 1440;
   const DAY   = 1440;
   const HOUR  = 60;
-
-  const months = Math.floor(minutes / MONTH);
-  minutes %= MONTH;
-
-  const weeks = Math.floor(minutes / WEEK);
-  minutes %= WEEK;
-
-  const days = Math.floor(minutes / DAY);
-  minutes %= DAY;
-
-  const hours = Math.floor(minutes / HOUR);
-  minutes %= HOUR;
-
+  const months = Math.floor(minutes / MONTH); minutes %= MONTH;
+  const weeks = Math.floor(minutes / WEEK); minutes %= WEEK;
+  const days = Math.floor(minutes / DAY); minutes %= DAY;
+  const hours = Math.floor(minutes / HOUR); minutes %= HOUR;
   let text = "";
   if (months > 0) text += `${months}ヶ月`;
   if (weeks > 0)  text += `${weeks}週`;
   if (days > 0)   text += `${days}日`;
   if (hours > 0)  text += `${hours}時間`;
   text += `${minutes}分`;
-
   return text;
 }
 
-/* ===== 合計時間表示 ===== */
 function updateTimeDisplay() {
   totalTime.textContent = formatDuration(freeMinutes);
 }
 
-/* ===== 高速タップ ===== */
 function fastClick(selector) {
   document.querySelectorAll(selector).forEach(el => {
     el.addEventListener("touchstart", e => { e.preventDefault(); el.click(); });
@@ -172,8 +162,12 @@ function fastClick(selector) {
 /* ===== カメラ起動 ===== */
 async function startCamera() {
   try {
-    cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    cameraStream = await navigator.mediaDevices.getUserMedia({ 
+      video: { facingMode: "environment" } 
+    });
     camera.srcObject = cameraStream;
+    camera.style.display = "block";
+    preview.style.display = "none";
     cameraActive = true;
     shootBtn.textContent = "撮影する";
   } catch (err) { alert("カメラが使えません: " + err); }
@@ -185,46 +179,44 @@ document.querySelectorAll(".key").forEach(btn => {
 });
 keyClear.addEventListener("click", () => { note.value = ""; });
 
-/* ===== 時間加算 ===== */
 function addTime(min) {
   freeMinutes += min;
   updateTimeDisplay();
 }
 
-/* ===== 月・週・日ボタン ===== */
 document.querySelectorAll(".tbtn").forEach(btn => {
   btn.addEventListener("click", () => {
     const type = btn.dataset.type;
-
-    if (type === "month") {
-      addTime(getDaysInCurrentMonth() * 1440);
-      return;
-    }
-    if (type === "week") {
-      addTime(7 * 1440);
-      return;
-    }
-    if (type === "day") {
-      addTime(1440);
-      return;
-    }
-
+    if (type === "month") { addTime(getDaysInCurrentMonth() * 1440); return; }
+    if (type === "week") { addTime(7 * 1440); return; }
+    if (type === "day") { addTime(1440); return; }
     addTime(parseInt(btn.dataset.min));
   });
 });
 
 clearTime.addEventListener("click", () => { freeMinutes = 0; updateTimeDisplay(); });
 
-/* ===== 撮影 ===== */
+/* ===== 撮影実行 (1:1 固定切り抜き) ===== */
 shootBtn.addEventListener("click", async () => {
   if (!cameraActive) { await startCamera(); return; }
 
   if (camera.videoWidth) {
-    const ratio = camera.videoWidth / camera.videoHeight;
-    canvas.height = 512;
-    canvas.width = 512 * ratio;
-    canvas.getContext("2d").drawImage(camera, 0, 0, canvas.width, canvas.height);
-    preview.src = canvas.toDataURL("image/png");
+    const size = 640; // 保存する正方形のサイズ
+    canvas.width = size;
+    canvas.height = size;
+
+    const vw = camera.videoWidth;
+    const vh = camera.videoHeight;
+    const minSize = Math.min(vw, vh);
+    const sx = (vw - minSize) / 2; // 中央から切り抜くための開始位置
+    const sy = (vh - minSize) / 2;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(camera, sx, sy, minSize, minSize, 0, 0, size, size);
+    preview.src = canvas.toDataURL("image/jpeg", 0.8);
+    
+    preview.style.display = "block";
+    camera.style.display = "none";
   }
 
   if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
@@ -236,24 +228,15 @@ shootBtn.addEventListener("click", async () => {
 /* ===== 保存 ===== */
 saveBtn.addEventListener("click", () => {
   const dataUrl = preview.src || "";
-  const noteText = note.value.trim();
-
-  const now = new Date();
-  const timestamp = now.toLocaleString("ja-JP");
-
-  const paidStartDate = new Date(now.getTime() + freeMinutes * 60000);
-  const paidStartText = paidStartDate.toLocaleString("ja-JP");
-
-  const durationText = formatDuration(freeMinutes);
-
+  if (!dataUrl) { alert("写真を撮影してください"); return; }
+  
   const items = JSON.parse(localStorage.getItem(KEY) || "[]");
   items.push({
     dataUrl,
-    note: noteText,
-    timestamp,
-    freeMinutes,
-    paidStart: paidStartText,
-    durationText,
+    note: note.value.trim(),
+    timestamp: new Date().toLocaleString("ja-JP"),
+    paidStart: new Date(Date.now() + freeMinutes * 60000).toLocaleString("ja-JP"),
+    durationText: formatDuration(freeMinutes),
     deleted: false
   });
   localStorage.setItem(KEY, JSON.stringify(items));
@@ -264,12 +247,13 @@ saveBtn.addEventListener("click", () => {
   loadItems();
 });
 
-/* ===== 保存一覧 ===== */
 function loadItems() {
   list.innerHTML = "";
   const items = JSON.parse(localStorage.getItem(KEY) || "[]");
 
-  items.forEach((item, index) => {
+  items.forEach((_, i) => {
+    const index = items.length - 1 - i;
+    const item = items[index];
     const div = document.createElement("div");
     div.className = "item";
     if (item.deleted) div.classList.add("grayed");
@@ -277,6 +261,7 @@ function loadItems() {
     if (item.dataUrl) {
       const img = document.createElement("img");
       img.src = item.dataUrl;
+      img.style.display = "block"; // リスト表示用
       div.appendChild(img);
     }
 
@@ -287,30 +272,40 @@ function loadItems() {
       <p>有料・課金開始時間: ${item.paidStart}</p>
     `;
 
+    const btnContainer = document.createElement("div");
+    btnContainer.style.display = "flex";
+    btnContainer.style.gap = "8px";
+
     if (!item.deleted) {
-      const del = document.createElement("button");
-      del.textContent = "削除（グレーアウト）";
-      del.addEventListener("click", () => {
+      const delBtn = document.createElement("button");
+      delBtn.textContent = "削除（グレー）";
+      delBtn.addEventListener("click", () => {
         item.deleted = true;
         localStorage.setItem(KEY, JSON.stringify(items));
         loadItems();
       });
-      div.appendChild(del);
+      btnContainer.appendChild(delBtn);
     } else {
-      const del2 = document.createElement("button");
-      del2.textContent = "完全削除";
-      del2.addEventListener("click", () => {
-        if (confirm("本当に削除しますか？")) {
-          items.splice(index, 1);
-        } else {
-          item.deleted = false;
-        }
+      const realDelBtn = document.createElement("button");
+      realDelBtn.textContent = "【完全に消去】";
+      realDelBtn.style.background = "#ff3b30";
+      realDelBtn.addEventListener("click", () => {
+        items.splice(index, 1);
         localStorage.setItem(KEY, JSON.stringify(items));
         loadItems();
       });
-      div.appendChild(del2);
+      const undoBtn = document.createElement("button");
+      undoBtn.textContent = "戻す";
+      undoBtn.style.background = "#8e8e93";
+      undoBtn.addEventListener("click", () => {
+        item.deleted = false;
+        localStorage.setItem(KEY, JSON.stringify(items));
+        loadItems();
+      });
+      btnContainer.appendChild(realDelBtn);
+      btnContainer.appendChild(undoBtn);
     }
-
+    div.appendChild(btnContainer);
     list.appendChild(div);
   });
 }
