@@ -18,7 +18,6 @@
     box-shadow:0 4px 12px rgba(0,0,0,0.08); margin-bottom:24px;
   }
 
-  /* プレビューとビデオを正方形(1:1)に固定 */
   video, img { 
     width:100%; 
     aspect-ratio: 1 / 1; 
@@ -35,8 +34,21 @@
   }
 
   textarea {
-    width:100%; padding:12px; font-size:17px;
-    border-radius:12px; border:1px solid #e5e5ea; background:#fff;
+    width: 100%;
+    padding: 12px;
+    font-size: 17px;
+    font-weight: 600;
+    border-radius: 12px;
+    box-sizing: border-box; 
+    background-color: #e3f2fd;
+    border: 2px solid #90caf9;
+    color: #0d47a1;
+    outline: none;
+  }
+
+  textarea:focus {
+    border-color: #42a5f5;
+    background-color: #eef7fe;
   }
 
   .keypad {
@@ -45,10 +57,18 @@
   }
 
   .keypad button {
-    background:#d9fdd3; color:#0a7d32; font-size:20px;
-    padding:10px; border-radius:10px; border:1px solid #b7e6b0;
+    background: #d9fdd3;
+    color: #0a7d32;
+    font-size: 20px;
+    height: 40px;
+    padding: 0;
+    border-radius: 10px;
+    border: 1px solid #b7e6b0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-
+  
   .clear-key { background:#ff9500 !important; color:white !important; border:none !important; }
 
   .item {
@@ -69,11 +89,67 @@
   }
 
   #clearTime { background:#ff9500; color:white; border:none; }
+  
+  .bg-light-red { background: #ffd6d6 !important; color: #8b0000 !important; border-color: #ffb3b3 !important; }
+  .bg-light-blue { background: #d6eaff !important; color: #004085 !important; border-color: #b3d7ff !important; }
+  .bg-light-purple { background: #f3e5f5 !important; color: #4a148c !important; border-color: #e1bee7 !important; }
+
+  .total-time-box {
+    background-color: #e8f5e9;
+    border: 2px solid #a5d6a7;
+    border-radius: 12px;
+    padding: 10px 15px;
+    margin: 15px 0;
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .total-time-label {
+    font-size: 16px;
+    color: #2e7d32;
+    font-weight: 600;
+  }
+
+  #totalTime {
+    font-size: 32px;
+    font-weight: 800;
+    color: #1b5e20;
+  }
+
+  /* 独自ダイアログのスタイル */
+  #customModal {
+    display: none;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); z-index: 1000;
+    align-items: center; justify-content: center;
+  }
+  .modal-content {
+    background: white; padding: 24px; border-radius: 20px;
+    width: 85%; max-width: 320px; text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  }
+  .modal-message { font-size: 17px; margin-bottom: 20px; font-weight: 600; color: #333; line-height: 1.4; }
+  .modal-buttons { display: flex; gap: 12px; }
+  .modal-buttons button { margin: 0; flex: 1; }
+  #modalCancel { background: #8e8e93; }
+
 </style>
 </head>
 <body>
 
 <h1>貸しスペース番号メモ</h1>
+
+<div id="customModal">
+  <div class="modal-content">
+    <div id="modalMsg" class="modal-message"></div>
+    <div class="modal-buttons">
+      <button id="modalCancel">キャンセル</button>
+      <button id="modalOk">OK</button>
+    </div>
+  </div>
+</div>
 
 <div class="card">
   <div id="camera-container">
@@ -85,7 +161,7 @@
   <img id="preview" alt="preview">
 
   <h3 style="margin-top:20px;">メモ（テンキー入力）</h3>
-  <textarea id="note" rows="2" placeholder="番号などを入力"></textarea>
+  <textarea id="note" rows="1" placeholder="番号などを入力"></textarea>
 
   <div class="keypad">
     <button class="key">1</button><button class="key">2</button><button class="key">3</button>
@@ -97,13 +173,15 @@
   </div>
 
   <h3 style="margin-top:20px;">無料・基本料金時間</h3>
-  <p style="font-size:22px; font-weight:600; margin:10px 0;">
-    合計時間：<span id="totalTime">0分</span>
-  </p>
+  <div class="total-time-box">
+    <span class="total-time-label">現在の合計時間</span>
+    <span id="totalTime">0分</span>
+  </div>
 
   <div class="time-buttons">
-    <button class="tbtn" data-type="month">+1ヶ月</button>
-    <button class="tbtn" data-type="week">+1週間</button>
+    <button class="tbtn bg-light-red" data-min="120">120分</button>
+    <button class="tbtn bg-light-blue" data-min="90">90分</button>
+    <button class="tbtn bg-light-purple" data-min="30">30分</button>
     <button class="tbtn" data-type="day">+1日</button>
     <button class="tbtn" data-min="60">+1時間</button>
     <button class="tbtn" data-min="30">+30分</button>
@@ -124,6 +202,32 @@ const KEY = 'parkingLockerMemo';
 let cameraStream = null;
 let cameraActive = false;
 let freeMinutes = 0;
+
+// 独自ダイアログ関数（Promiseを使用して待機可能にする）
+function showModal(msg, showCancel = true) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('customModal');
+    const msgEl = document.getElementById('modalMsg');
+    const okBtn = document.getElementById('modalOk');
+    const cancelBtn = document.getElementById('modalCancel');
+
+    msgEl.innerText = msg;
+    modal.style.display = 'flex';
+    cancelBtn.style.display = showCancel ? 'block' : 'none';
+
+    const handleOk = () => { cleanup(); resolve(true); };
+    const handleCancel = () => { cleanup(); resolve(false); };
+
+    function cleanup() {
+      modal.style.display = 'none';
+      okBtn.removeEventListener('click', handleOk);
+      cancelBtn.removeEventListener('click', handleCancel);
+    }
+
+    okBtn.addEventListener('click', handleOk);
+    cancelBtn.addEventListener('click', handleCancel);
+  });
+}
 
 function getDaysInCurrentMonth() {
   const now = new Date();
@@ -159,7 +263,6 @@ function fastClick(selector) {
   });
 }
 
-/* ===== カメラ起動 ===== */
 async function startCamera() {
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({ 
@@ -170,10 +273,9 @@ async function startCamera() {
     preview.style.display = "none";
     cameraActive = true;
     shootBtn.textContent = "撮影する";
-  } catch (err) { alert("カメラが使えません: " + err); }
+  } catch (err) { showModal("カメラが使えません: " + err, false); }
 }
 
-/* ===== テンキー ===== */
 document.querySelectorAll(".key").forEach(btn => {
   btn.addEventListener("click", () => { note.value += btn.textContent; });
 });
@@ -196,25 +298,21 @@ document.querySelectorAll(".tbtn").forEach(btn => {
 
 clearTime.addEventListener("click", () => { freeMinutes = 0; updateTimeDisplay(); });
 
-/* ===== 撮影実行 (1:1 固定切り抜き) ===== */
 shootBtn.addEventListener("click", async () => {
   if (!cameraActive) { await startCamera(); return; }
 
   if (camera.videoWidth) {
-    const size = 640; // 保存する正方形のサイズ
+    const size = 640;
     canvas.width = size;
     canvas.height = size;
-
     const vw = camera.videoWidth;
     const vh = camera.videoHeight;
     const minSize = Math.min(vw, vh);
-    const sx = (vw - minSize) / 2; // 中央から切り抜くための開始位置
+    const sx = (vw - minSize) / 2;
     const sy = (vh - minSize) / 2;
-
     const ctx = canvas.getContext("2d");
     ctx.drawImage(camera, sx, sy, minSize, minSize, 0, 0, size, size);
     preview.src = canvas.toDataURL("image/jpeg", 0.8);
-    
     preview.style.display = "block";
     camera.style.display = "none";
   }
@@ -225,16 +323,19 @@ shootBtn.addEventListener("click", async () => {
   shootBtn.textContent = "再撮影";
 });
 
-/* ===== 保存 ===== */
-saveBtn.addEventListener("click", () => {
-  // src属性がセットされていない、または初期状態のときは空文字にする
+// 保存処理（async化して独自ダイアログを待機可能に）
+saveBtn.addEventListener("click", async () => {
   const dataUrl = (preview.style.display === "block") ? preview.src : "";
   const noteText = note.value.trim();
 
-  // 写真もメモも両方ない場合は保存させない
   if (!dataUrl && !noteText) {
-    alert("写真またはメモを入力してください");
+    await showModal("写真またはメモを入力してください", false);
     return;
+  }
+
+  if (freeMinutes === 0) {
+    const isOk = await showModal("合計時間が0分ですが、このまま保存してもよろしいですか？");
+    if (!isOk) return;
   }
   
   const items = JSON.parse(localStorage.getItem(KEY) || "[]");
@@ -248,11 +349,10 @@ saveBtn.addEventListener("click", () => {
   });
   localStorage.setItem(KEY, JSON.stringify(items));
 
-  // 入力リセット
   note.value = "";
   freeMinutes = 0;
-  preview.src = "";           // 画像をクリア
-  preview.style.display = "none"; // 画像を非表示
+  preview.src = "";
+  preview.style.display = "none";
   updateTimeDisplay();
   loadItems();
 });
@@ -271,7 +371,7 @@ function loadItems() {
     if (item.dataUrl) {
       const img = document.createElement("img");
       img.src = item.dataUrl;
-      img.style.display = "block"; // リスト表示用
+      img.style.display = "block";
       div.appendChild(img);
     }
 
@@ -288,7 +388,7 @@ function loadItems() {
 
     if (!item.deleted) {
       const delBtn = document.createElement("button");
-      delBtn.textContent = "削除（グレー）";
+      delBtn.textContent = "削除（グレーアウト）";
       delBtn.addEventListener("click", () => {
         item.deleted = true;
         localStorage.setItem(KEY, JSON.stringify(items));
@@ -299,10 +399,13 @@ function loadItems() {
       const realDelBtn = document.createElement("button");
       realDelBtn.textContent = "【完全に消去】";
       realDelBtn.style.background = "#ff3b30";
-      realDelBtn.addEventListener("click", () => {
-        items.splice(index, 1);
-        localStorage.setItem(KEY, JSON.stringify(items));
-        loadItems();
+      realDelBtn.addEventListener("click", async () => {
+        const isOk = await showModal("本当に完全に消去しますか？");
+        if(isOk) {
+            items.splice(index, 1);
+            localStorage.setItem(KEY, JSON.stringify(items));
+            loadItems();
+        }
       });
       const undoBtn = document.createElement("button");
       undoBtn.textContent = "戻す";
