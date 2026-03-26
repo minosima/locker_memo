@@ -385,10 +385,21 @@ function loadItems() {
     const btnContainer = document.createElement("div");
     btnContainer.style.display = "flex";
     btnContainer.style.gap = "8px";
-
+    if (!item.deleted) {
+      const alarmBtn = document.createElement("button");
+      alarmBtn.textContent = "⏰ アラーム予約\n（iPhone専用）";
+      alarmBtn.style.background = "#5856d6"; // パープル系の色
+      alarmBtn.addEventListener("click", () => {
+        // 課金開始時刻をISO形式などでショートカットに渡す
+        const targetTime = item.paidStart.replace(/\//g, '-'); // フォーマット調整
+        const url = `shortcuts://run-shortcut?name=SetParkingAlarm&input=${encodeURIComponent(targetTime)}`;
+        window.location.href = url;
+      });
+      btnContainer.appendChild(alarmBtn);
+    }
     if (!item.deleted) {
       const delBtn = document.createElement("button");
-      delBtn.textContent = "削除（グレーアウト）";
+      delBtn.textContent = "削除\n（グレーアウト）";
       delBtn.addEventListener("click", () => {
         item.deleted = true;
         localStorage.setItem(KEY, JSON.stringify(items));
