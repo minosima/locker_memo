@@ -160,8 +160,8 @@
   <canvas id="canvas" style="display:none;"></canvas>
   <img id="preview" alt="preview">
 
-  <h3 style="margin-top:20px;">メモ（テンキー入力）</h3>
-  <textarea id="note" rows="1" placeholder="番号などを入力"></textarea>
+</br>
+  <textarea id="note" rows="1" placeholder="番号等メモ　(テンキー入力可）"></textarea>
 
   <div class="keypad">
     <button class="key">1</button><button class="key">2</button><button class="key">3</button>
@@ -172,22 +172,18 @@
     <div></div>
   </div>
 
-  <h3 style="margin-top:20px;">無料・基本料金時間</h3>
   <div class="total-time-box">
-    <span class="total-time-label">現在の合計時間</span>
+    <span class="total-time-label">無料・基本料金時間設定</span>
     <span id="totalTime">0分</span>
   </div>
 
   <div class="time-buttons">
-    <button class="tbtn bg-light-red" data-min="120">120分</button>
-    <button class="tbtn bg-light-blue" data-min="90">90分</button>
-    <button class="tbtn bg-light-purple" data-min="30">30分</button>
+    <button class="tbtn bg-light-red" data-min="120">+120分</button>
+    <button class="tbtn bg-light-blue" data-min="60">+60分</button>
+    <button class="tbtn bg-light-purple" data-min="30">+30分</button>
     <button class="tbtn" data-type="day">+1日</button>
-    <button class="tbtn" data-min="60">+1時間</button>
-    <button class="tbtn" data-min="30">+30分</button>
     <button class="tbtn" data-min="10">+10分</button>
     <button class="tbtn" data-min="5">+5分</button>
-    <button class="tbtn" data-min="1">+1分</button>
     <button id="clearTime">クリア</button>
   </div>
 
