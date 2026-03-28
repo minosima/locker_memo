@@ -169,7 +169,7 @@
 
   <div class="total-time-box">
     <span class="total-time-label">追加料金開始</span>
-    <span id="totalTime">0分後</span>
+    <span id="totalTime">0分</span>
   </div>
 
   <div class="time-buttons">
@@ -257,7 +257,7 @@ function formatDuration(minutes) {
 }
 
 function updateTimeDisplay() {
-  document.getElementById('totalTime').textContent = formatDuration(freeMinutes);
+  document.getElementById('totalTime').textContent = formatDuration(freeMinutes)+ "後";
 }
 
 function fastClick(selector) {
