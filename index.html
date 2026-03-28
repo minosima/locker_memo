@@ -6,13 +6,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-  html, body { touch-action: manipulation; }
+  html, body { 
+    touch-action: manipulation; 
+    overflow-x: hidden; /* 横揺れ防止 */
+  }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", sans-serif;
-    margin: 0; padding: 16px; background: #f2f2f7;
+    margin: 0; 
+    padding: 16px 60px 16px 16px; /* 右側に44px〜60px程度のスペースを確保 */
+    background: #f2f2f7;
   }
-  h1 { text-align:center; margin-bottom:20px; font-weight:700; color:#111; }
 
+  /* スクロール操作用スペースの帯 */
+  .scroll-guide {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 44px; /* 指でなぞりやすい幅 */
+    height: 100%;
+    background: rgba(0, 0, 0, 0.05); /* 視覚的に場所がわかる程度の薄いグレー */
+    border-left: 1px solid rgba(0, 0, 0, 0.1);
+    z-index: 9999;
+    pointer-events: auto; /* ここを触ってスクロール可能にする */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* 帯の中に「スクロール」という文字やアイコンを入れる場合（任意） */
+  .scroll-guide::after {
+    content: "SCROLL";
+    writing-mode: vertical-rl;
+    font-size: 10px;
+    color: #888;
+    letter-spacing: 4px;
+  }
   .card {
     background:#fff; padding:20px; border-radius:18px;
     box-shadow:0 4px 12px rgba(0,0,0,0.08); margin-bottom:24px;
@@ -34,22 +62,12 @@
   }
 
   textarea {
-    width: 100%;
-    padding: 12px;
-    font-size: 20px;
-    font-weight: 600;
-    border-radius: 12px;
-    box-sizing: border-box; 
-    background-color: #e3f2fd;
-    border: 2px solid #90caf9;
-    color: #0d47a1;
-    outline: none;
+    width: 100%; padding: 12px; font-size: 20px; font-weight: 600;
+    border-radius: 12px; box-sizing: border-box; 
+    background-color: #e3f2fd; border: 2px solid #90caf9; color: #0d47a1; outline: none;
   }
 
-  textarea:focus {
-    border-color: #42a5f5;
-    background-color: #eef7fe;
-  }
+  textarea:focus { border-color: #42a5f5; background-color: #eef7fe; }
 
   .keypad {
     display:grid; grid-template-columns:repeat(3,1fr);
@@ -57,16 +75,8 @@
   }
 
   .keypad button {
-    background: #d9fdd3;
-    color: #0a7d32;
-    font-size: 20px;
-    height: 40px;
-    padding: 0;
-    border-radius: 10px;
-    border: 1px solid #b7e6b0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: #d9fdd3; color: #0a7d32; font-size: 20px; height: 40px; padding: 0;
+    border-radius: 10px; border: 1px solid #b7e6b0; display: flex; align-items: center; justify-content: center;
   }
   
   .clear-key { background:#ff9500 !important; color:white !important; border:none !important; }
@@ -78,10 +88,7 @@
 
   .item.grayed { opacity:0.4; }
 
-  .time-buttons {
-    display:flex; flex-wrap:wrap; gap:8px;
-  }
-
+  .time-buttons { display:flex; flex-wrap:wrap; gap:8px; }
   .time-buttons button {
     flex:1; min-width:80px; padding:10px 0;
     background:#fff2cc; color:#0a7d32;
@@ -95,39 +102,19 @@
   .bg-light-purple { background: #f3e5f5 !important; color: #4a148c !important; border-color: #e1bee7 !important; }
 
   .total-time-box {
-    background-color: #e8f5e9;
-    border: 2px solid #a5d6a7;
-    border-radius: 12px;
-    padding: 10px 15px;
-    margin: 15px 0;
-    display: flex;
-    justify-content: center;
-    align-items: baseline;
-    gap: 10px;
+    background-color: #e8f5e9; border: 2px solid #a5d6a7; border-radius: 12px;
+    padding: 10px 15px; margin: 15px 0; display: flex; justify-content: center; align-items: baseline; gap: 10px;
   }
 
-  .total-time-label {
-    font-size: 16px;
-    color: #2e7d32;
-    font-weight: 600;
-  }
+  .total-time-label { font-size: 16px; color: #2e7d32; font-weight: 600; }
+  #totalTime { font-size: 24px; font-weight: 800; color: #1b5e20; }
 
-  #totalTime {
-    font-size: 24px;
-    font-weight: 800;
-    color: #1b5e20;
-  }
-
-  /* 独自ダイアログのスタイル */
   #customModal {
-    display: none;
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5); z-index: 1000;
-    align-items: center; justify-content: center;
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;
   }
   .modal-content {
-    background: white; padding: 24px; border-radius: 20px;
-    width: 85%; max-width: 320px; text-align: center;
+    background: white; padding: 24px; border-radius: 20px; width: 85%; max-width: 320px; text-align: center;
     box-shadow: 0 10px 25px rgba(0,0,0,0.2);
   }
   .modal-message { font-size: 17px; margin-bottom: 20px; font-weight: 600; color: #333; line-height: 1.4; }
@@ -135,12 +122,21 @@
   .modal-buttons button { margin: 0; flex: 1; }
   #modalCancel { background: #8e8e93; }
 
+  /* ドラム式選択と保存ボタンのレイアウト */
+  .alarm-save-row {
+    display: flex; gap: 10px; margin-top: 12px; align-items: center;
+  }
+  .drum-select-box {
+    flex: 1; background: #fff; padding: 10px; border-radius: 12px; border: 1px solid #ccc; position: relative;
+  }
+  #alarmBeforeMin {
+    width: 100%; font-size: 18px; border: none; background: transparent; font-weight: bold;
+    color: #007aff; -webkit-appearance: none; text-align: center; outline: none;
+  }
 </style>
 </head>
 <body>
-
-
-
+<div class="scroll-guide"></div>
 <div id="customModal">
   <div class="modal-content">
     <div id="modalMsg" class="modal-message"></div>
@@ -156,12 +152,11 @@
     <video id="camera" autoplay playsinline></video>
     <button id="shootBtn">カメラ起動</button>
   </div>
-
   <canvas id="canvas" style="display:none;"></canvas>
   <img id="preview" alt="preview">
 
-</br>
-  <textarea id="note" rows="1" placeholder="番号等メモ　(テンキー入力可）"></textarea>
+  <br>
+  <textarea id="note" rows="1" placeholder="番号等メモ (テンキー入力可)"></textarea>
 
   <div class="keypad">
     <button class="key">1</button><button class="key">2</button><button class="key">3</button>
@@ -187,7 +182,23 @@
     <button id="clearTime">クリア</button>
   </div>
 
-  <button id="saveBtn">保存</button>
+  <div class="alarm-save-row">
+    <div class="drum-select-box">
+      <select id="alarmBeforeMin">
+        <option value="0">0分前</option>
+        <option value="1">1分前</option>
+        <option value="3">3分前</option>
+        <option value="5">5分前</option>
+        <option value="10" selected>10分前</option>
+        <option value="15">15分前</option>
+        <option value="20">20分前</option>
+        <option value="30">30分前</option>
+        <option value="60">60分前</option>
+      </select>
+      <div style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 10px; color: #888;">▼</div>
+    </div>
+    <button id="saveBtn" style="flex: 1.5; margin-top: 0; background: #28a745;">保存 ＋ アラーム予約</button>
+  </div>
 </div>
 
 <h2>保存済み</h2>
@@ -199,27 +210,22 @@ let cameraStream = null;
 let cameraActive = false;
 let freeMinutes = 0;
 
-// 独自ダイアログ関数（Promiseを使用して待機可能にする）
 function showModal(msg, showCancel = true) {
   return new Promise((resolve) => {
     const modal = document.getElementById('customModal');
     const msgEl = document.getElementById('modalMsg');
     const okBtn = document.getElementById('modalOk');
     const cancelBtn = document.getElementById('modalCancel');
-
     msgEl.innerText = msg;
     modal.style.display = 'flex';
     cancelBtn.style.display = showCancel ? 'block' : 'none';
-
     const handleOk = () => { cleanup(); resolve(true); };
     const handleCancel = () => { cleanup(); resolve(false); };
-
     function cleanup() {
       modal.style.display = 'none';
       okBtn.removeEventListener('click', handleOk);
       cancelBtn.removeEventListener('click', handleCancel);
     }
-
     okBtn.addEventListener('click', handleOk);
     cancelBtn.addEventListener('click', handleCancel);
   });
@@ -233,24 +239,25 @@ function getDaysInCurrentMonth() {
 function formatDuration(minutes) {
   const daysInMonth = getDaysInCurrentMonth();
   const MONTH = daysInMonth * 1440;
-  const WEEK  = 7 * 1440;
-  const DAY   = 1440;
-  const HOUR  = 60;
-  const months = Math.floor(minutes / MONTH); minutes %= MONTH;
-  const weeks = Math.floor(minutes / WEEK); minutes %= WEEK;
-  const days = Math.floor(minutes / DAY); minutes %= DAY;
-  const hours = Math.floor(minutes / HOUR); minutes %= HOUR;
+  const WEEK = 7 * 1440;
+  const DAY = 1440;
+  const HOUR = 60;
+  let m = minutes;
+  const months = Math.floor(m / MONTH); m %= MONTH;
+  const weeks = Math.floor(m / WEEK); m %= WEEK;
+  const days = Math.floor(m / DAY); m %= DAY;
+  const hours = Math.floor(m / HOUR); m %= HOUR;
   let text = "";
   if (months > 0) text += `${months}ヶ月`;
   if (weeks > 0)  text += `${weeks}週`;
   if (days > 0)   text += `${days}日`;
   if (hours > 0)  text += `${hours}時間`;
-  text += `${minutes}分`;
+  text += `${m}分`;
   return text;
 }
 
 function updateTimeDisplay() {
-  totalTime.textContent = formatDuration(freeMinutes);
+  document.getElementById('totalTime').textContent = formatDuration(freeMinutes);
 }
 
 function fastClick(selector) {
@@ -261,9 +268,7 @@ function fastClick(selector) {
 
 async function startCamera() {
   try {
-    cameraStream = await navigator.mediaDevices.getUserMedia({ 
-      video: { facingMode: "environment" } 
-    });
+    cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
     camera.srcObject = cameraStream;
     camera.style.display = "block";
     preview.style.display = "none";
@@ -285,8 +290,6 @@ function addTime(min) {
 document.querySelectorAll(".tbtn").forEach(btn => {
   btn.addEventListener("click", () => {
     const type = btn.dataset.type;
-    if (type === "month") { addTime(getDaysInCurrentMonth() * 1440); return; }
-    if (type === "week") { addTime(7 * 1440); return; }
     if (type === "day") { addTime(1440); return; }
     addTime(parseInt(btn.dataset.min));
   });
@@ -296,11 +299,9 @@ clearTime.addEventListener("click", () => { freeMinutes = 0; updateTimeDisplay()
 
 shootBtn.addEventListener("click", async () => {
   if (!cameraActive) { await startCamera(); return; }
-
   if (camera.videoWidth) {
     const size = 640;
-    canvas.width = size;
-    canvas.height = size;
+    canvas.width = size; canvas.height = size;
     const vw = camera.videoWidth;
     const vh = camera.videoHeight;
     const minSize = Math.min(vw, vh);
@@ -312,17 +313,16 @@ shootBtn.addEventListener("click", async () => {
     preview.style.display = "block";
     camera.style.display = "none";
   }
-
   if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
-  camera.srcObject = null;
   cameraActive = false;
   shootBtn.textContent = "再撮影";
 });
 
-// 保存処理（async化して独自ダイアログを待機可能に）
+// 保存 + アラーム計算ロジック
 saveBtn.addEventListener("click", async () => {
   const dataUrl = (preview.style.display === "block") ? preview.src : "";
   const noteText = note.value.trim();
+  const alarmBefore = parseInt(document.getElementById('alarmBeforeMin').value);
 
   if (!dataUrl && !noteText) {
     await showModal("写真またはメモを入力してください", false);
@@ -334,16 +334,22 @@ saveBtn.addEventListener("click", async () => {
     if (!isOk) return;
   }
   
+  const paidStartTimeDate = new Date(Date.now() + freeMinutes * 60000);
   const items = JSON.parse(localStorage.getItem(KEY) || "[]");
   items.push({
     dataUrl,
     note: noteText,
     timestamp: new Date().toLocaleString("ja-JP"),
-    paidStart: new Date(Date.now() + freeMinutes * 60000).toLocaleString("ja-JP"),
+    paidStart: paidStartTimeDate.toLocaleString("ja-JP"),
     durationText: formatDuration(freeMinutes),
     deleted: false
   });
   localStorage.setItem(KEY, JSON.stringify(items));
+
+  // アラーム計算
+  const alarmTime = new Date(paidStartTimeDate.getTime() - alarmBefore * 60000);
+  const timeString = alarmTime.toLocaleString("ja-JP").replace(/\//g, '-');
+  const url = `shortcuts://run-shortcut?name=SetParkingAlarm&input=${encodeURIComponent(timeString)}`;
 
   note.value = "";
   freeMinutes = 0;
@@ -351,51 +357,45 @@ saveBtn.addEventListener("click", async () => {
   preview.style.display = "none";
   updateTimeDisplay();
   loadItems();
+
+  window.location.href = url;
 });
 
 function loadItems() {
   list.innerHTML = "";
   const items = JSON.parse(localStorage.getItem(KEY) || "[]");
-
   items.forEach((_, i) => {
     const index = items.length - 1 - i;
     const item = items[index];
     const div = document.createElement("div");
     div.className = "item";
     if (item.deleted) div.classList.add("grayed");
-
     if (item.dataUrl) {
       const img = document.createElement("img");
-      img.src = item.dataUrl;
-      img.style.display = "block";
+      img.src = item.dataUrl; img.style.display = "block";
       div.appendChild(img);
     }
-
     div.innerHTML += `
       <p>メモ: ${item.note || "(なし)"}</p>
       <p>入庫時刻: ${item.timestamp}</p>
       <p>無料・基本料金時間: ${item.durationText}</p>
       <p>有料・課金開始時間: ${item.paidStart}</p>
     `;
-
     const btnContainer = document.createElement("div");
-    btnContainer.style.display = "flex";
-    btnContainer.style.gap = "8px";
+    btnContainer.style.display = "flex"; btnContainer.style.gap = "8px";
+    
     if (!item.deleted) {
       const alarmBtn = document.createElement("button");
-      alarmBtn.textContent = "⏰ アラーム予約\n（iPhone専用）";
-      alarmBtn.style.background = "#5856d6"; // パープル系の色
+      alarmBtn.innerHTML = "⏰ アラーム再設定";
+      alarmBtn.style.background = "#5856d6";
       alarmBtn.addEventListener("click", () => {
-        // 課金開始時刻をISO形式などでショートカットに渡す
-        const targetTime = item.paidStart.replace(/\//g, '-'); // フォーマット調整
-        const url = `shortcuts://run-shortcut?name=SetParkingAlarm&input=${encodeURIComponent(targetTime)}`;
-        window.location.href = url;
+        const targetTime = item.paidStart.replace(/\//g, '-');
+        window.location.href = `shortcuts://run-shortcut?name=SetParkingAlarm&input=${encodeURIComponent(targetTime)}`;
       });
       btnContainer.appendChild(alarmBtn);
-    }
-    if (!item.deleted) {
+
       const delBtn = document.createElement("button");
-      delBtn.textContent = "削除\n（グレーアウト）";
+      delBtn.textContent = "削除";
       delBtn.addEventListener("click", () => {
         item.deleted = true;
         localStorage.setItem(KEY, JSON.stringify(items));
@@ -404,26 +404,22 @@ function loadItems() {
       btnContainer.appendChild(delBtn);
     } else {
       const realDelBtn = document.createElement("button");
-      realDelBtn.textContent = "【完全に消去】";
-      realDelBtn.style.background = "#ff3b30";
+      realDelBtn.textContent = "【完全に消去】"; realDelBtn.style.background = "#ff3b30";
       realDelBtn.addEventListener("click", async () => {
-        const isOk = await showModal("本当に完全に消去しますか？");
-        if(isOk) {
+        if(await showModal("本当に完全に消去しますか？")) {
             items.splice(index, 1);
             localStorage.setItem(KEY, JSON.stringify(items));
             loadItems();
         }
       });
       const undoBtn = document.createElement("button");
-      undoBtn.textContent = "戻す";
-      undoBtn.style.background = "#8e8e93";
+      undoBtn.textContent = "戻す"; undoBtn.style.background = "#8e8e93";
       undoBtn.addEventListener("click", () => {
         item.deleted = false;
         localStorage.setItem(KEY, JSON.stringify(items));
         loadItems();
       });
-      btnContainer.appendChild(realDelBtn);
-      btnContainer.appendChild(undoBtn);
+      btnContainer.appendChild(realDelBtn); btnContainer.appendChild(undoBtn);
     }
     div.appendChild(btnContainer);
     list.appendChild(div);
@@ -434,6 +430,5 @@ loadItems();
 updateTimeDisplay();
 fastClick("button, .key");
 </script>
-
 </body>
 </html>
