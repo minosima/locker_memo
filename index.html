@@ -358,15 +358,13 @@ saveBtn.addEventListener("click", async () => {
   });
   localStorage.setItem(KEY, JSON.stringify(items));
 
-  // アラーム用情報の作成
+  // アラーム用時間の作成
   const alarmTime = new Date(paidStartTimeDate.getTime() - alarmBefore * 60000);
   const timeString = alarmTime.toLocaleString("ja-JP").replace(/\//g, '-');
   
-  // アラーム名を「・」区切りで作成
-  const alarmTitle = ["レンタルスペースアプリ", usage, noteText].filter(v => v).join("・");
-  
-  // ショートカットへは「名前,日時」の形式で送信
-  const combinedInput = `${alarmTitle},${timeString}`;
+  // 全てを「・」で繋ぐ（空の項目は除外）形式
+  // 例：レンタルスペースアプリ・駐車場・123・2026-03-29 12:00:00
+  const combinedInput = ["レンタルスペースアプリ", usage, noteText, timeString].filter(v => v).join("・");
   const url = `shortcuts://run-shortcut?name=${SHORTCUT_NAME}&input=${encodeURIComponent(combinedInput)}`;
 
   note.value = "";
@@ -410,8 +408,8 @@ function loadItems() {
       alarmBtn.style.background = "#5856d6";
       alarmBtn.addEventListener("click", () => {
         const targetTime = item.paidStart.replace(/\//g, '-');
-        const alarmTitle = ["レンタルスペースアプリ", item.usage, item.note].filter(v => v).join("・");
-        const combinedInput = `${alarmTitle},${targetTime}`;
+        // 再設定時も「・」で繋ぐ
+        const combinedInput = ["レンタルスペースアプリ", item.usage, item.note, targetTime].filter(v => v).join("・");
         window.location.href = `shortcuts://run-shortcut?name=${SHORTCUT_NAME}&input=${encodeURIComponent(combinedInput)}`;
       });
       btnContainer.appendChild(alarmBtn);
