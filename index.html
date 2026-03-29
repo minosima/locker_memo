@@ -8,34 +8,32 @@
 <style>
   html, body { 
     touch-action: manipulation; 
-    overflow-x: hidden; /* 横揺れ防止 */
+    overflow-x: hidden; 
   }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", sans-serif;
     margin: 0; 
-    padding: 16px 60px 16px 16px; /* 右側に44px〜60px程度のスペースを確保 */
+    padding: 16px 60px 16px 16px; 
     background: #f2f2f7;
   }
 
-  /* スクロール操作用スペースの帯 */
   .scroll-guide {
     position: fixed;
     top: 0;
     right: 0;
-    width: 44px; /* 指でなぞりやすい幅 */
+    width: 44px;
     height: 100%;
-    background: rgba(0, 0, 0, 0.05); /* 視覚的に場所がわかる程度の薄いグレー */
+    background: rgba(0, 0, 0, 0.05);
     border-left: 1px solid rgba(0, 0, 0, 0.1);
     z-index: 9999;
-    pointer-events: auto; /* ここを触ってスクロール可能にする */
+    pointer-events: auto;
     display: flex;
     align-items: center;
     justify-content: center;
   }
   
-  /* 帯の中に「スクロール」という文字やアイコンを入れる場合（任意） */
   .scroll-guide::after {
-    content: "SCROLL";
+    content: "／／／／／／／／／／／／／／／／／／／／";
     writing-mode: vertical-rl;
     font-size: 10px;
     color: #888;
@@ -122,15 +120,14 @@
   .modal-buttons button { margin: 0; flex: 1; }
   #modalCancel { background: #8e8e93; }
 
-  /* ドラム式選択と保存ボタンのレイアウト */
   .alarm-save-row {
     display: flex; gap: 10px; margin-top: 12px; align-items: center;
   }
   .drum-select-box {
     flex: 1; background: #fff; padding: 10px; border-radius: 12px; border: 1px solid #ccc; position: relative;
   }
-  #alarmBeforeMin {
-    width: 100%; font-size: 18px; border: none; background: transparent; font-weight: bold;
+  .drum-select-box select {
+    width: 100%; font-size: 16px; border: none; background: transparent; font-weight: bold;
     color: #007aff; -webkit-appearance: none; text-align: center; outline: none;
   }
 </style>
@@ -163,13 +160,22 @@
     <button class="key">4</button><button class="key">5</button><button class="key">6</button>
     <button class="key">7</button><button class="key">8</button><button class="key">9</button>
     <button class="key">0</button>
+    
+    <div class="drum-select-box" style="margin-top:12px; padding:0 5px;">
+      <select id="usageSelect" style="height:40px; font-size:14px;">
+        <option value="">用途</option>
+        <option value="駐車場">駐車場</option>
+        <option value="駐輪場">駐輪場</option>
+        <option value="ロッカー">ロッカー</option>
+      </select>
+    </div>
+
     <button id="keyClear" class="key clear-key">クリア</button>
-    <div></div>
   </div>
 
   <div class="total-time-box">
     <span class="total-time-label">追加料金開始</span>
-    <span id="totalTime">0分</span>
+    <span id="totalTime">0分後</span>
   </div>
 
   <div class="time-buttons">
@@ -257,7 +263,7 @@ function formatDuration(minutes) {
 }
 
 function updateTimeDisplay() {
-  document.getElementById('totalTime').textContent = formatDuration(freeMinutes)+ "後";
+  document.getElementById('totalTime').textContent = formatDuration(freeMinutes) + "後";
 }
 
 function fastClick(selector) {
@@ -280,7 +286,10 @@ async function startCamera() {
 document.querySelectorAll(".key").forEach(btn => {
   btn.addEventListener("click", () => { note.value += btn.textContent; });
 });
-keyClear.addEventListener("click", () => { note.value = ""; });
+keyClear.addEventListener("click", () => { 
+  note.value = ""; 
+  document.getElementById('usageSelect').value = "";
+});
 
 function addTime(min) {
   freeMinutes += min;
@@ -322,6 +331,7 @@ shootBtn.addEventListener("click", async () => {
 saveBtn.addEventListener("click", async () => {
   const dataUrl = (preview.style.display === "block") ? preview.src : "";
   const noteText = note.value.trim();
+  const usage = document.getElementById('usageSelect').value;
   const alarmBefore = parseInt(document.getElementById('alarmBeforeMin').value);
 
   if (!dataUrl && !noteText) {
@@ -339,6 +349,7 @@ saveBtn.addEventListener("click", async () => {
   items.push({
     dataUrl,
     note: noteText,
+    usage: usage,
     timestamp: new Date().toLocaleString("ja-JP"),
     paidStart: paidStartTimeDate.toLocaleString("ja-JP"),
     durationText: formatDuration(freeMinutes),
@@ -346,12 +357,15 @@ saveBtn.addEventListener("click", async () => {
   });
   localStorage.setItem(KEY, JSON.stringify(items));
 
-  // アラーム計算
+  // アラーム用情報の作成（指定の順序：アプリ名,用途,メモ,日時）
   const alarmTime = new Date(paidStartTimeDate.getTime() - alarmBefore * 60000);
   const timeString = alarmTime.toLocaleString("ja-JP").replace(/\//g, '-');
-  const url = `shortcuts://run-shortcut?name=SetParkingAlarm&input=${encodeURIComponent(timeString)}`;
+  
+  const combinedInput = `レンタルスペースアプリ,${usage || ""},${noteText},${timeString}`;
+  const url = `shortcuts://run-shortcut?name=SetParkingAlarm&input=${encodeURIComponent(combinedInput)}`;
 
   note.value = "";
+  document.getElementById('usageSelect').value = "";
   freeMinutes = 0;
   preview.src = "";
   preview.style.display = "none";
@@ -376,6 +390,7 @@ function loadItems() {
       div.appendChild(img);
     }
     div.innerHTML += `
+      <p>用途: ${item.usage || "(未設定)"}</p>
       <p>メモ: ${item.note || "(なし)"}</p>
       <p>入庫時刻: ${item.timestamp}</p>
       <p>無料・基本料金時間: ${item.durationText}</p>
@@ -390,7 +405,9 @@ function loadItems() {
       alarmBtn.style.background = "#5856d6";
       alarmBtn.addEventListener("click", () => {
         const targetTime = item.paidStart.replace(/\//g, '-');
-        window.location.href = `shortcuts://run-shortcut?name=SetParkingAlarm&input=${encodeURIComponent(targetTime)}`;
+        // 再設定時も同じ順序で送信
+        const combinedInput = `レンタルスペースアプリ,${item.usage || ""},${item.note || ""},${targetTime}`;
+        window.location.href = `shortcuts://run-shortcut?name=SetParkingAlarm&input=${encodeURIComponent(combinedInput)}`;
       });
       btnContainer.appendChild(alarmBtn);
 
