@@ -212,7 +212,6 @@
 
 <script>
 const KEY = 'parkingLockerMemo';
-const SHORTCUT_NAME = 'SetParkingAlarm';
 let cameraStream = null;
 let cameraActive = false;
 let freeMinutes = 0;
@@ -356,16 +355,15 @@ saveBtn.addEventListener("click", async () => {
     durationText: formatDuration(freeMinutes),
     deleted: false
   });
-  localStorage.setItem(KEY, JSON.stringify(items));
+  localStorage.setItem(KEY) || localStorage.setItem(KEY, JSON.stringify(items));
 
-  // アラーム用時間の作成
+  // アラーム用情報の作成（指定の順序：アプリ名・用途・メモ・日時）
   const alarmTime = new Date(paidStartTimeDate.getTime() - alarmBefore * 60000);
   const timeString = alarmTime.toLocaleString("ja-JP").replace(/\//g, '-');
   
-  // 全てを「・」で繋ぐ（空の項目は除外）形式
-  // 例：レンタルスペースアプリ・駐車場・123・2026-03-29 12:00:00
-  const combinedInput = ["レンタルスペースアプリ", usage, noteText, timeString].filter(v => v).join("・");
-  const url = `shortcuts://run-shortcut?name=${SHORTCUT_NAME}&input=${encodeURIComponent(combinedInput)}`;
+  // 【修正箇所】カンマ区切りを「・」区切りに変更
+  const combinedInput = `レンタルスペースアプリ・${usage || ""}・${noteText}・${timeString}`;
+  const url = `shortcuts://run-shortcut?name=SetParkingAlarm&input=${encodeURIComponent(combinedInput)}`;
 
   note.value = "";
   document.getElementById('usageSelect').value = "";
@@ -408,9 +406,9 @@ function loadItems() {
       alarmBtn.style.background = "#5856d6";
       alarmBtn.addEventListener("click", () => {
         const targetTime = item.paidStart.replace(/\//g, '-');
-        // 再設定時も「・」で繋ぐ
-        const combinedInput = ["レンタルスペースアプリ", item.usage, item.note, targetTime].filter(v => v).join("・");
-        window.location.href = `shortcuts://run-shortcut?name=${SHORTCUT_NAME}&input=${encodeURIComponent(combinedInput)}`;
+        // 再設定時も同じ順序で送信。指定の「・」区切りに変更
+        const combinedInput = `レンタルスペースアプリ・${item.usage || ""}・${item.note || ""}・${targetTime}`;
+        window.location.href = `shortcuts://run-shortcut?name=SetParkingAlarm&input=${encodeURIComponent(combinedInput)}`;
       });
       btnContainer.appendChild(alarmBtn);
 
